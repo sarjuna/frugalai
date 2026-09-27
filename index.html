@@ -1,0 +1,830 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Interactive planning and impact model for community data centres, with two sample deployments.">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Community Data Centre Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#EDF0EA; --surface:#F8FAF6; --surface-2:#E3E8E0; --line:#CBD3C7; --line-soft:#DCE2D8;
+  --ink:#14231F; --ink-2:#44544F; --ink-3:#6B7A74;
+  --accent:#0F7B5F; --accent-soft:#D3EADF; --accent-ink:#0A5A45;
+  --sun:#C9831A; --sun-soft:#F4E3C4; --water:#2A6F97; --water-soft:#D5E5EF;
+  --grid:#6F6A86; --grid-soft:#E2E0EC;
+  --good:#1F8A4C; --warn:#B7791F; --bad:#B5452F; --bad-soft:#F3DCD5;
+  --shadow:0 1px 0 rgba(20,35,31,.04),0 8px 24px -12px rgba(20,35,31,.18);
+  --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#0D1513; --surface:#141E1B; --surface-2:#1B2723; --line:#2C3A35; --line-soft:#22302B;
+    --ink:#E3ECE7; --ink-2:#B3C1BB; --ink-3:#83938C;
+    --accent:#3CC39A; --accent-soft:#163A2F; --accent-ink:#7FE0C0;
+    --sun:#E8A640; --sun-soft:#3A2C12; --water:#5FA6D1; --water-soft:#15303F;
+    --grid:#A29CC4; --grid-soft:#27253A;
+    --good:#4CC27F; --warn:#E0A43E; --bad:#E27A61; --bad-soft:#3A1E17;
+    --shadow:0 1px 0 rgba(0,0,0,.2),0 10px 28px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#0D1513; --surface:#141E1B; --surface-2:#1B2723; --line:#2C3A35; --line-soft:#22302B;
+  --ink:#E3ECE7; --ink-2:#B3C1BB; --ink-3:#83938C;
+  --accent:#3CC39A; --accent-soft:#163A2F; --accent-ink:#7FE0C0;
+  --sun:#E8A640; --sun-soft:#3A2C12; --water:#5FA6D1; --water-soft:#15303F;
+  --grid:#A29CC4; --grid-soft:#27253A;
+  --good:#4CC27F; --warn:#E0A43E; --bad:#E27A61; --bad-soft:#3A1E17;
+  --shadow:0 1px 0 rgba(0,0,0,.2),0 10px 28px -14px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;margin:0}
+.wrap{max-width:1320px;margin:0 auto;padding-inline:clamp(16px,3vw,36px)}
+a{color:var(--accent-ink)}
+h1,h2,h3{text-wrap:balance;margin:0}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.num{font-variant-numeric:tabular-nums}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+/* top bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--ground) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line-soft)}
+.bar .wrap{display:flex;align-items:center;gap:20px;height:58px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:800;font-size:21px;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap}
+.brand svg{flex:none}
+.bar nav{display:flex;gap:4px;margin-left:auto;overflow-x:auto}
+.bar nav a{font-size:13px;font-weight:600;color:var(--ink-2);text-decoration:none;padding:6px 10px;border-radius:6px;white-space:nowrap}
+.bar nav a:hover{background:var(--surface-2);color:var(--ink)}
+.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:3px 7px;border:1px solid var(--line);border-radius:4px;color:var(--ink-3);white-space:nowrap}
+
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);gap:clamp(24px,4vw,56px);align-items:center;padding-block:clamp(32px,5vw,64px) 28px}
+.hero h1{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:clamp(40px,4.9vw,68px);line-height:.92;letter-spacing:.005em}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.hero p.lede{font-size:17px;color:var(--ink-2);max-width:54ch;margin:20px 0 0}
+.hero .meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:22px;font-size:13px;color:var(--ink-3)}
+.hero .meta b{color:var(--ink);font-weight:600}
+.schematic{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:14px 14px 8px;position:relative}
+.schematic .cap{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:2px 4px 6px}
+.schematic svg{display:block;width:100%;height:auto}
+.flow{fill:none;stroke-linecap:round}
+.flow.anim{stroke-dasharray:2 10;animation:dash 1.6s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-24}}
+@media (prefers-reduced-motion: reduce){.flow.anim{animation:none}}
+
+/* mode switch */
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-block:8px 28px}
+.mode{all:unset;cursor:pointer;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;align-items:start;padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:var(--surface);transition:border-color .15s,background .15s}
+.mode:hover{border-color:var(--ink-3)}
+.mode[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.mode .k{grid-row:span 2;font-family:var(--display);font-weight:800;font-size:28px;line-height:1;text-transform:uppercase;color:var(--accent-ink);min-width:88px}
+.mode .t{font-weight:700;font-size:15px}
+.mode .d{font-size:13px;color:var(--ink-2)}
+.mode:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+/* workbench */
+.bench{display:grid;grid-template-columns:320px minmax(0,1fr);gap:24px;align-items:start}
+.sheet{position:sticky;top:calc(env(safe-area-inset-top,0px) + 74px);background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 18px 8px;max-height:calc(100vh - 96px);overflow:auto}
+.sheet h2{font-family:var(--display);font-weight:700;font-size:22px;text-transform:uppercase;letter-spacing:.02em}
+.sheet .site{font-size:13px;color:var(--ink-2);margin:4px 0 12px}
+.grp{border-top:1px solid var(--line-soft);padding-block:12px 4px}
+.grp>.eyebrow{margin-bottom:8px;display:block}
+.ctl{display:grid;gap:4px;margin-bottom:14px}
+.ctl .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.ctl label{font-size:13px;font-weight:600}
+.ctl output{font-family:var(--mono);font-size:12.5px;color:var(--accent-ink);background:var(--accent-soft);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.ctl .hint{font-size:11.5px;color:var(--ink-3);line-height:1.35}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;background:transparent;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(to right,var(--accent) var(--p,50%),var(--line) var(--p,50%))}
+input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--line)}
+input[type=range]::-moz-range-progress{height:4px;border-radius:2px;background:var(--accent)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--surface);border:2px solid var(--accent);margin-top:-6px}
+input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--surface);border:2px solid var(--accent)}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{flex:1;border:0;background:transparent;padding:6px 4px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--ink-2)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.sheet .acts{display:flex;gap:8px;padding-block:6px 12px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer}
+.btn:hover{border-color:var(--ink-3)}
+.btn.primary{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+
+.outs{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.kpi{background:var(--surface);padding:14px 16px 14px;display:grid;gap:2px;align-content:start;min-width:0;overflow-wrap:anywhere}
+.kpi .l{font-size:12px;font-weight:600;color:var(--ink-2)}
+.kpi .v{font-family:var(--display);font-weight:700;font-size:38px;line-height:1.05;letter-spacing:.01em}
+.kpi .v small{font-family:var(--body);font-size:13px;font-weight:600;color:var(--ink-3);margin-left:4px;letter-spacing:0}
+.kpi .r{font-family:var(--mono);font-size:11.5px;color:var(--ink-3)}
+.kpi .dl{font-family:var(--mono);font-size:11.5px;font-weight:600}
+.dl.up{color:var(--bad)} .dl.down{color:var(--good)} .dl.flat{color:var(--ink-3)}
+.dl.upg{color:var(--good)} .dl.downb{color:var(--bad)}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.panel header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.panel h3{font-family:var(--display);font-weight:700;font-size:24px;text-transform:uppercase;letter-spacing:.02em;line-height:1.05}
+.panel .sub{font-size:13.5px;color:var(--ink-2);margin-top:4px;max-width:70ch}
+.two{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px}
+.chart{width:100%;overflow-x:auto}
+.chart svg{display:block;width:100%;height:auto;min-width:420px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink-2)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;border:1px solid transparent;white-space:nowrap}
+.chip.ok{background:var(--accent-soft);color:var(--accent-ink)}
+.chip.warn{background:var(--sun-soft);color:var(--warn)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.flags{display:flex;flex-wrap:wrap;gap:6px}
+
+table.t{width:100%;border-collapse:collapse;font-size:13px}
+.t th,.t td{padding:7px 8px;border-bottom:1px solid var(--line-soft);text-align:right;white-space:nowrap}
+.t th:first-child,.t td:first-child{text-align:left;white-space:normal}
+.t thead th{font-size:11px;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:500}
+.t tr.tot td{font-weight:700;border-top:1px solid var(--line)}
+.t td.neg{color:var(--bad)}
+.tw{overflow-x:auto}
+
+.ledger{display:grid;gap:2px}
+.lrow{display:grid;grid-template-columns:minmax(0,1fr) 150px minmax(0,1fr);gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line-soft)}
+.lrow:last-child{border-bottom:0}
+.lrow .dom{font-weight:700;font-size:13px;text-align:center}
+.lrow .dom small{display:block;font-family:var(--mono);font-weight:500;font-size:11px;color:var(--ink-3);margin-top:2px}
+.side{display:grid;gap:4px}
+.side.h{justify-items:end;text-align:right}
+.barw{height:12px;width:100%;background:var(--surface-2);border-radius:3px;position:relative;overflow:hidden}
+.barw span{position:absolute;top:0;bottom:0;border-radius:3px;transition:width .35s ease}
+.side.h .barw span{right:0;background:var(--bad)}
+.side.b .barw span{left:0;background:var(--good)}
+.side p{margin:0;font-size:12px;color:var(--ink-2);line-height:1.35}
+.lhead{display:grid;grid-template-columns:minmax(0,1fr) 150px minmax(0,1fr);gap:12px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);padding-bottom:6px;border-bottom:1px solid var(--line)}
+.lhead span:first-child{text-align:right} .lhead span:nth-child(2){text-align:center}
+
+.check{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.check li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:start;padding:12px 14px;border:1px solid var(--line-soft);border-radius:10px;background:var(--surface)}
+.check .ic{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;font-family:var(--mono);font-weight:600;font-size:12px}
+.check .ic.bad{background:var(--bad-soft);color:var(--bad)} .check .ic.warn{background:var(--sun-soft);color:var(--warn)} .check .ic.ok{background:var(--accent-soft);color:var(--accent-ink)}
+.check b{display:block;font-size:13.5px}
+.check span{font-size:12.5px;color:var(--ink-2)}
+
+.method{padding-block:48px 24px}
+.method h2{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:clamp(34px,4.2vw,54px);line-height:.95}
+.mgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:22px}
+.mcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px}
+.mcard .n{font-family:var(--display);font-weight:800;font-size:34px;color:var(--accent);line-height:1}
+.mcard h4{margin:6px 0 4px;font-size:14.5px}
+.mcard p{margin:0;font-size:12.5px;color:var(--ink-2)}
+.mcard code{display:block;margin-top:10px;font-family:var(--mono);font-size:11px;line-height:1.5;color:var(--ink-2);background:var(--surface-2);padding:8px;border-radius:6px;white-space:pre-wrap}
+.data{margin-top:28px}
+.note{font-size:12.5px;color:var(--ink-3);max-width:90ch}
+footer{border-top:1px solid var(--line);padding-block:22px 36px;margin-top:28px;font-size:12.5px;color:var(--ink-3)}
+.sep{height:1px;background:var(--line-soft);margin:14px 0}
+.stack{display:grid;gap:10px}
+.mini{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:6px 0;border-bottom:1px dashed var(--line-soft)}
+.mini:last-child{border-bottom:0}
+.mini b{font-family:var(--mono);font-weight:600;font-size:12.5px}
+.gauge{height:10px;background:var(--surface-2);border-radius:5px;position:relative;overflow:hidden;margin-top:6px}
+.gauge span{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:5px;transition:width .3s}
+
+@media (max-width:1080px){
+  .bench{grid-template-columns:minmax(0,1fr)}
+  .sheet{position:static;max-height:none}
+  .mgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:860px){
+  .hero{grid-template-columns:minmax(0,1fr)}
+  .two{grid-template-columns:minmax(0,1fr)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:560px){
+  .modes{grid-template-columns:minmax(0,1fr)}
+  .kpis{grid-template-columns:minmax(0,1fr)}
+  .kpi .v{font-size:32px}
+  .lrow,.lhead{grid-template-columns:minmax(0,1fr) 92px minmax(0,1fr);gap:8px}
+  .mgrid{grid-template-columns:1fr}
+  .bar nav{display:none}
+  .brand{font-size:18px}
+}
+</style>
+
+</head>
+<body>
+<div class="bar">
+  <div class="wrap">
+    <div class="brand">
+      <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="3" y="2" width="20" height="22" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><line x1="7" y1="8" x2="19" y2="8" stroke="var(--accent)" stroke-width="2"/><line x1="7" y1="13" x2="19" y2="13" stroke="currentColor" stroke-width="2"/><line x1="7" y1="18" x2="14" y2="18" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="18" r="1.6" fill="var(--sun)"/></svg>
+      CDC Builder
+    </div>
+    <span class="tag">Sample data</span>
+    <nav aria-label="Sections">
+      <a href="#model">Model</a><a href="#energy">Energy &amp; water</a><a href="#money">Finance</a><a href="#impact">Impact ledger</a><a href="#checklist">Checklist</a><a href="#method">Method</a>
+    </nav>
+  </div>
+</div>
+
+<main class="wrap">
+  <section class="hero">
+    <div>
+      <div class="eyebrow">Community Data Centre Builder · open planning model</div>
+      <h1>Every data centre lands in <em>a community.</em> Model it from theirs.</h1>
+      <p class="lede">Size a facility, power it, pay for it, and see who gains and who bears the cost. Build mode plans a community-owned edge site. Assess mode puts a developer's proposal through the same engine from the host community's side.</p>
+      <div class="meta"><span><b>5</b> linked modules</span><span><b>8</b> impact domains</span><span><b>2</b> sample deployments</span><span>Modelled on APC's Community Network Builder</span></div>
+    </div>
+    <figure class="schematic" style="margin:0">
+      <div class="cap"><span class="eyebrow" id="schemTitle">Site schematic</span><span class="tag" id="schemTag">live</span></div>
+      <svg id="schem" viewBox="0 0 600 380" role="img" aria-label="Live schematic of energy, water and service flows for the selected site"></svg>
+    </figure>
+  </section>
+
+  <div class="modes" role="group" aria-label="Choose a sample deployment">
+    <button class="mode" id="mBuild" aria-pressed="true" type="button">
+      <span class="k">Build</span><span class="t">Kundgol Community Compute Co-op</span>
+      <span class="d">Dharwad district, Karnataka · community-owned 24 kW edge site serving 12 villages</span>
+    </button>
+    <button class="mode" id="mAssess" aria-pressed="false" type="button">
+      <span class="k">Assess</span><span class="t">Proposed Fenland AI campus</span>
+      <span class="d">Cambridgeshire, England · 100 MW developer proposal on farmland, reviewed by the host district</span>
+    </button>
+  </div>
+
+  <section class="bench" id="model">
+    <aside class="sheet" id="sheet" aria-label="Inputs"></aside>
+    <div class="outs">
+      <div class="kpis" id="kpis"></div>
+
+      <section class="panel" id="energy">
+        <header>
+          <div><h3 id="eTitle">Energy &amp; water</h3><p class="sub" id="eSub"></p></div>
+          <div class="flags" id="eFlags"></div>
+        </header>
+        <div class="two">
+          <div>
+            <div class="eyebrow" id="c1Label" style="margin-bottom:6px"></div>
+            <div class="chart" id="chartDay"></div>
+            <div class="legend" id="legDay"></div>
+          </div>
+          <div>
+            <div class="eyebrow" id="c2Label" style="margin-bottom:6px"></div>
+            <div class="chart" id="chartWater"></div>
+            <div class="legend" id="legWater"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="money">
+        <header>
+          <div><h3 id="mTitle"></h3><p class="sub" id="mSub"></p></div>
+          <div class="flags" id="mFlags"></div>
+        </header>
+        <div class="chart" id="chartMoney"></div>
+        <div class="legend" id="legMoney" style="margin-top:6px"></div>
+        <div class="sep"></div>
+        <div class="two">
+          <div class="tw" id="stmt"></div>
+          <div class="stack" id="side"></div>
+        </div>
+      </section>
+
+      <section class="panel" id="impact">
+        <header>
+          <div><h3>Impact ledger</h3><p class="sub">Gains and burdens side by side for each domain, scored 0 to 5 from the model outputs. The note under each bar says who receives it.</p></div>
+          <div class="legend"><span><i style="background:var(--bad)"></i>Burden</span><span><i style="background:var(--good)"></i>Benefit</span></div>
+        </header>
+        <div class="lhead"><span>Burden · who bears it</span><span>Domain</span><span>Benefit · who gains</span></div>
+        <div class="ledger" id="ledger"></div>
+      </section>
+
+      <section class="panel" id="checklist">
+        <header>
+          <div><h3 id="cTitle">Checklist</h3><p class="sub" id="cSub"></p></div>
+        </header>
+        <ul class="check" id="checks"></ul>
+      </section>
+    </div>
+  </section>
+
+  <section class="method" id="method">
+    <div class="eyebrow">How the model works</div>
+    <h2>Five modules, one chain</h2>
+    <p class="note" style="font-size:14px;color:var(--ink-2);margin-top:10px">Each module is a set of plain calculations with every coefficient visible. A change to any input flows through to the finances and the impact ledger. Ranges shown under each headline figure reflect the uncertainty in the underlying coefficients.</p>
+    <div class="mgrid">
+      <div class="mcard"><div class="n">1</div><h4>Site &amp; demand</h4><p>Population, anchor users and services set the compute the site must deliver.</p><code>demand_kW = base + users × W_per_user</code></div>
+      <div class="mcard"><div class="n">2</div><h4>Technical design</h4><p>Cooling choice and climate set PUE and WUE; IT load sets racks and equipment.</p><code>facility_kW = IT_kW × PUE</code></div>
+      <div class="mcard"><div class="n">3</div><h4>Energy &amp; water</h4><p>Solar and battery sizing, grid draw, emissions, and water on site and at the power station.</p><code>solar_kWp = kWh/day × share ÷ (PSH × derate)
+water = IT_MWh×WUE + grid_MWh×EWIF</code></div>
+      <div class="mcard"><div class="n">4</div><h4>Financial model</h4><p>Capex, opex, revenue and debt. In Assess mode: rates, reliefs, grid costs and who pays them.</p><code>net = revenue − opex − debt service</code></div>
+      <div class="mcard"><div class="n">5</div><h4>Impact ledger</h4><p>Eight domains scored for benefit and burden, with a checklist of questions to settle.</p><code>score = f(outputs, local context)</code></div>
+    </div>
+
+    <div class="data panel" style="margin-top:24px">
+      <header><div><h3>Sample inputs and their basis</h3><p class="sub">Both deployments are illustrative. Coefficients are typical published values chosen to be realistic, not measurements of a real site. Replace them with local data before any decision.</p></div></header>
+      <div class="tw">
+      <table class="t">
+        <thead><tr><th>Coefficient</th><th>Kundgol (Build)</th><th>Fenland (Assess)</th><th>Basis</th></tr></thead>
+        <tbody>
+          <tr><td>Peak sun hours</td><td>5.3 h/day</td><td>2.7 h/day</td><td style="text-align:left;white-space:normal">Typical global horizontal irradiance for each region</td></tr>
+          <tr><td>Grid carbon intensity</td><td>0.71 tCO₂/MWh</td><td>0.124 tCO₂/MWh</td><td style="text-align:left;white-space:normal">National average grid factors, India and Great Britain</td></tr>
+          <tr><td>Water intensity of grid power</td><td>2.2 L/kWh</td><td>1.1 L/kWh</td><td style="text-align:left;white-space:normal">Coal-heavy vs gas and renewables mix</td></tr>
+          <tr><td>PUE · WUE by cooling</td><td>1.45 / 1.22 / 1.12</td><td>1.40 / 1.20 / 1.15</td><td style="text-align:left;white-space:normal">Air, evaporative, liquid; hot climate penalises air</td></tr>
+          <tr><td>Grid tariff</td><td>₹9.5/kWh</td><td>n/a</td><td style="text-align:left;white-space:normal">Commercial tariff range in Karnataka</td></tr>
+          <tr><td>Household electricity</td><td>1,000 kWh/yr</td><td>2,700 kWh/yr</td><td style="text-align:left;white-space:normal">Rural Indian and UK typical consumption</td></tr>
+          <tr><td>Household water</td><td>n/a</td><td>105 m³/yr</td><td style="text-align:left;white-space:normal">About 125 L per person per day, 2.3 people</td></tr>
+          <tr><td>Business rates</td><td>n/a</td><td>£38k/MW/yr, 40% retained locally</td><td style="text-align:left;white-space:normal">Illustrative rateable value and retention share</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="note" style="margin-top:12px">Evidence on local effects: employment rises about 0.9% in the first three years after opening and about 3.5% later, with much smaller gains in rural areas; electricity prices rose about 5% where effects could be measured (Georgia Tech, 2026). Cutting on-site water use usually shifts water use to power stations elsewhere (AGU Advances, 2026). See the <a href="https://www.apc.org/en/project/community-network-builder-tool-technical-and-financial-planning-community-centred" target="_blank" rel="noopener">Community Network Builder</a> for the connectivity tool this one follows.</p>
+    </div>
+  </section>
+
+  <footer>Community Data Centre Builder · prototype · all figures are sample values for illustration. Kundgol Community Compute Co-op and the Fenland AI campus are fictional deployments placed in real regions.</footer>
+</main>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const fmt=(v,d=0)=>Number(v).toLocaleString('en-GB',{minimumFractionDigits:d,maximumFractionDigits:d});
+const inr=v=>{const a=Math.abs(v),s=v<0?'−':'';if(a>=1e7)return s+'₹'+fmt(a/1e7,2)+' Cr';return s+'₹'+fmt(a/1e5,1)+' L';};
+const gbp=v=>{const a=Math.abs(v),s=v<0?'−':'';if(a>=1e6)return s+'£'+fmt(a/1e6,1)+'m';if(a>=1e3)return s+'£'+fmt(a/1e3,0)+'k';return s+'£'+fmt(a,0);};
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+/* ---------------- state ---------------- */
+const DEF={
+  build:{it:20,cool:'air',solar:60,batt:10,tariff:9.5,hh:3000,fee:50,grant:60},
+  assess:{mw:100,cool:'evap',renew:20,relief:60,fund:0,hire:25,gridShare:40}
+};
+let mode='build';
+let S={build:{...DEF.build},assess:{...DEF.assess}};
+let pinned={build:null,assess:null};
+
+/* ---------------- models ---------------- */
+const COOL_B={air:{pue:1.45,wue:0,cap:40000,label:'Air'},evap:{pue:1.22,wue:1.4,cap:55000,label:'Evaporative'},liquid:{pue:1.12,wue:0.15,cap:90000,label:'Liquid'}};
+const COOL_A={air:{pue:1.40,wue:0.05,label:'Air'},evap:{pue:1.20,wue:1.8,label:'Evaporative'},liquid:{pue:1.15,wue:0.3,label:'Closed-loop liquid'}};
+const SUNSHAPE=(h,psh)=>{ if(h<6||h>18) return 0; return Math.sin(Math.PI*(h-6)/12)*psh/(24/Math.PI); };
+
+function modelBuild(p){
+  const c=COOL_B[p.cool], util=0.7, psh=5.3, derate=0.77;
+  const facKw=p.it*c.pue, avgKw=facKw*util, annualMWh=avgKw*8.76;
+  const maxSolar=Math.min(90,42+p.batt*3.6), solar=Math.min(p.solar,maxSolar);
+  const kwp=avgKw*24*(solar/100)/(psh*derate);
+  const battKwh=avgKw*p.batt/0.8;
+  const gridMWh=annualMWh*(1-solar/100);
+  const itCap=p.it*280000, facCap=4500000+facKw*c.cap, solarCap=kwp*42000, battCap=battKwh*20000, bh=800000;
+  const civil=0.1*(facCap+solarCap+battCap+bh);
+  const capex=itCap+facCap+solarCap+battCap+bh+civil;
+  const grant=capex*p.grant/100, equity=capex*0.10, loan=Math.max(0,capex-grant-equity), r=0.06, n=8;
+  const debt=loan>0? loan*r/(1-Math.pow(1+r,-n)) : 0;
+  const energyCost=gridMWh*1000*p.tariff, staff=3*360000, maint=0.03*(capex-itCap), backhaul=480000, refresh=itCap/6, ins=0.01*capex;
+  const opex=energyCost+staff+maint+backhaul+refresh+ins;
+  const fixedRev={fpo:2400*250,schools:14*90000,phc:3*200000,gp:12*60000,spare:p.it*0.2*60000};
+  const years=[];let cum=-equity,be=null;
+  for(let y=1;y<=10;y++){
+    const g=y<=5?Math.pow(1.10,y-1):Math.pow(1.10,4)*Math.pow(1.03,y-5);
+    const hhY=Math.min(4100,Math.round(p.hh*g));
+    const hhRev=hhY*p.fee*12;
+    const rev=hhRev+fixedRev.fpo+fixedRev.schools+fixedRev.phc+fixedRev.gp+fixedRev.spare*(y<=3?1:0.7);
+    const eY=energyCost*Math.pow(1.04,y-1);
+    const op=eY+staff*Math.pow(1.05,y-1)+maint+backhaul+refresh+ins;
+    const ds=y<=n?debt:0;
+    const net=rev-op-ds; cum+=net;
+    if(be===null&&cum>0) be=y;
+    const demandKw=5+hhY*0.002*(1+0.08*(y-1));
+    years.push({y,hh:hhY,hhRev,rev,op,ds,net,cum,energy:eY,demandKw});
+  }
+  const co2=gridMWh*0.71, wDirect=p.it*util*8.76*c.wue, wInd=gridMWh*2.2;
+  const demandNow=years[0].demandKw, demand5=years[4].demandKw;
+  // daily profile
+  const day=[];let soc=battKwh*0.5;const cap=battKwh;
+  for(let pass=0;pass<2;pass++){ day.length=0;
+    for(let h=0;h<24;h++){
+      const load=avgKw*(h>=8&&h<=21?1.08:0.88);
+      const sun=kwp*derate*SUNSHAPE(h+0.5,psh);
+      let fromSun=Math.min(sun,load), surplus=sun-fromSun, fromBatt=0, fromGrid=0;
+      if(surplus>0){soc=Math.min(cap,soc+surplus*0.92);}
+      const rem=load-fromSun;
+      if(rem>0){fromBatt=Math.min(rem,soc);soc-=fromBatt;fromGrid=rem-fromBatt;}
+      day.push({h,load,sun,fromSun,fromBatt,fromGrid,curtail:Math.max(0,surplus-(cap-soc))});
+    }}
+  const monthly=[0.9,0.95,1.1,1.2,1.15,0.95,0.85,0.85,0.9,0.95,1.0,1.0].map(f=>({direct:wDirect/12*(c.wue>0?f:1),ind:wInd/12}));
+  return {c,facKw,avgKw,annualMWh,solar,maxSolar,kwp,battKwh,gridMWh,capex,grant,equity,loan,debt,opex,energyCost,staff,maint,backhaul,refresh,ins,
+    itCap,facCap,solarCap,battCap,bh,civil,fixedRev,years,be,co2,wDirect,wInd,demandNow,demand5,day,monthly};
+}
+
+function modelAssess(p){
+  const c=COOL_A[p.cool], util=0.75;
+  const itMWh=p.mw*1000*8.76*util, annualMWh=itMWh*c.pue;
+  const gridMWh=annualMWh*(1-p.renew/100);
+  const hhEq=annualMWh*1000/2700;
+  const wDirect=itMWh*c.wue, wInd=gridMWh*1.1, hhWater=wDirect/105;
+  const co2=gridMWh*0.124;
+  const constrPeak=Math.round(p.mw*12), ops=Math.round(p.mw*0.45+10), localOps=Math.round(ops*p.hire/100), localConstr=Math.round(constrPeak*Math.min(1,p.hire/100+0.15));
+  const ratesGross=p.mw*38000, retained=0.4;
+  const gridCost=p.mw*450000, socialised=gridCost*(1-p.gridShare/100);
+  const regionHH=2.6e6;
+  const billHH=socialised/20/regionHH + p.mw*0.09*(1-p.renew/200);
+  const serviceCost=400000+p.mw*1500;
+  const years=[];let cum=0,be=null;
+  for(let y=1;y<=20;y++){
+    const constr=y<=3;
+    const rates= constr?0: ratesGross*retained*(y<=13?(1-p.relief/100):1);
+    const fund= constr?0: p.fund*p.mw;
+    const cost= constr? 500000 : serviceCost;
+    const net=rates+fund-cost; cum+=net;
+    if(be===null&&cum>0) be=y;
+    years.push({y,rates,fund,cost,net,cum});
+  }
+  const reliefCost=ratesGross*(p.relief/100)*10;
+  const land=p.mw*0.22, gensets=Math.ceil(p.mw/2.5), genHours=gensets*12*12;
+  const mf=[0.6,0.6,0.75,0.9,1.1,1.35,1.55,1.5,1.2,0.9,0.7,0.6], ms=mf.reduce((a,b)=>a+b,0);
+  const monthly=mf.map(f=>({direct:wDirect*(c.wue>0.2?f/ms:1/12),ind:wInd/12}));
+  // day profile: load flat, renewables share as on-site/PPA solar+wind blend
+  const avgMW=annualMWh/8760, day=[];
+  for(let h=0;h<24;h++){
+    const load=avgMW*(0.96+0.08*Math.sin(Math.PI*(h-8)/12));
+    const ren=avgMW*(p.renew/100)*(0.6+0.4*(SUNSHAPE(h+0.5,2.7)/(2.7/(24/Math.PI))))/(0.6+0.4/Math.PI);
+    const fromRen=Math.min(ren,load);
+    day.push({h,load,fromSun:fromRen,fromBatt:0,fromGrid:load-fromRen});
+  }
+  return {c,itMWh,annualMWh,gridMWh,hhEq,wDirect,wInd,hhWater,co2,constrPeak,ops,localOps,localConstr,ratesGross,gridCost,socialised,billHH,serviceCost,years,be,reliefCost,land,gensets,genHours,monthly,day,avgMW};
+}
+
+/* ---------------- inputs panel ---------------- */
+const CTRLS={
+ build:[
+  {g:'Site & demand'},
+  {k:'hh',label:'Households subscribed, year 1',min:500,max:4100,step:100,f:v=>fmt(v),hint:'Of about 4,100 households in 12 villages; grows 10% a year to that ceiling'},
+  {k:'fee',label:'Household fee',min:0,max:120,step:5,f:v=>'₹'+v+'/mo',hint:'Kannada voice assistant, crop advice, e-services'},
+  {g:'Technical design'},
+  {k:'it',label:'IT capacity',min:8,max:60,step:2,f:v=>v+' kW',hint:'Inference servers, storage and caching'},
+  {k:'cool',label:'Cooling',seg:[['air','Air'],['evap','Evaporative'],['liquid','Liquid']]},
+  {g:'Energy'},
+  {k:'solar',label:'Solar share of energy',min:0,max:90,step:5,f:v=>v+'%',hint:'On-site solar; above about 45% needs batteries'},
+  {k:'batt',label:'Battery autonomy',min:0,max:14,step:1,f:v=>v+' h',hint:'Hours of average load stored for evening and night'},
+  {k:'tariff',label:'Grid tariff',min:6,max:14,step:0.5,f:v=>'₹'+v.toFixed(1)+'/kWh'},
+  {g:'Finance'},
+  {k:'grant',label:'Capital grant',min:0,max:80,step:5,f:v=>v+'%',hint:'Share of capex from grants. Members put in 10%; the rest is a 6%, 8-year loan'}
+ ],
+ assess:[
+  {g:'Proposal'},
+  {k:'mw',label:'IT capacity',min:20,max:300,step:10,f:v=>v+' MW',hint:'As stated in the planning application'},
+  {k:'cool',label:'Cooling',seg:[['air','Air'],['evap','Evaporative'],['liquid','Liquid']]},
+  {k:'renew',label:'Renewable supply',min:0,max:80,step:5,f:v=>v+'%',hint:'On-site or local PPA, matched hourly'},
+  {g:'Deal terms'},
+  {k:'relief',label:'Business rates relief',min:0,max:100,step:5,f:v=>v+'%',hint:'Discount for the first 10 operating years'},
+  {k:'fund',label:'Community benefit fund',min:0,max:20000,step:1000,f:v=>'£'+fmt(v)+'/MW/yr',hint:'Paid to a local trust each operating year'},
+  {k:'hire',label:'Local hiring commitment',min:0,max:80,step:5,f:v=>v+'%',hint:'Share of permanent roles filled from the district'},
+  {k:'gridShare',label:'Developer share of grid upgrade',min:0,max:100,step:10,f:v=>v+'%',hint:'The rest is recovered through regional bills'}
+ ]
+};
+
+function renderSheet(){
+  const p=S[mode], site= mode==='build'
+    ? {h:'Kundgol Community Compute Co-op',s:'Kundgol taluk, Dharwad, Karnataka · 12 villages · ~18,500 people · 14 schools, 3 health centres, 1 farmer producer organisation'}
+    : {h:'Fenland AI campus',s:'Proposed by a hyperscale developer · 22 ha of arable land · Anglian Water supply zone · district of ~45,000 households'};
+  let h=`<div class="eyebrow">${mode==='build'?'Build mode · community owner':'Assess mode · host community'}</div><h2>${site.h}</h2><p class="site">${site.s}</p>`;
+  let open=false;
+  for(const c of CTRLS[mode]){
+    if(c.g){h+=(open?'</div>':'')+`<div class="grp"><span class="eyebrow">${c.g}</span>`;open=true;continue;}
+    const id=`in-${mode}-${c.k}`;
+    if(c.seg){
+      h+=`<div class="ctl"><div class="row"><label id="${id}-l">${c.label}</label></div><div class="seg" role="group" aria-labelledby="${id}-l">`+
+        c.seg.map(([v,t])=>`<button type="button" data-k="${c.k}" data-v="${v}" aria-pressed="${p[c.k]===v}">${t}</button>`).join('')+`</div></div>`;
+    }else{
+      h+=`<div class="ctl"><div class="row"><label for="${id}">${c.label}</label><output id="${id}-o">${c.f(p[c.k])}</output></div>
+        <input type="range" id="${id}" data-k="${c.k}" min="${c.min}" max="${c.max}" step="${c.step}" value="${p[c.k]}">
+        ${c.hint?`<div class="hint">${c.hint}</div>`:''}</div>`;
+    }
+  }
+  h+=`</div><div class="acts"><button class="btn primary" id="pinBtn" type="button">${pinned[mode]?'Update baseline':'Pin as baseline'}</button><button class="btn" id="resetBtn" type="button">Reset sample</button></div>`;
+  $('#sheet').innerHTML=h;
+  $('#sheet').querySelectorAll('input[type=range]').forEach(el=>{
+    setFill(el);
+    el.addEventListener('input',()=>{
+      const k=el.dataset.k, c=CTRLS[mode].find(x=>x.k===k);
+      S[mode][k]=parseFloat(el.value); $('#'+el.id+'-o').textContent=c.f(S[mode][k]); setFill(el); update();
+    });
+  });
+  $('#sheet').querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{
+    S[mode][b.dataset.k]=b.dataset.v;
+    b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+    update();
+  }));
+  $('#pinBtn').addEventListener('click',()=>{pinned[mode]=kpiValues();$('#pinBtn').textContent='Update baseline';update();});
+  $('#resetBtn').addEventListener('click',()=>{S[mode]={...DEF[mode]};pinned[mode]=null;renderSheet();update();});
+}
+function setFill(el){const p=(el.value-el.min)/(el.max-el.min)*100;el.style.setProperty('--p',p+'%');}
+
+/* ---------------- charts ---------------- */
+function niceStep(max,n){const raw=max/n,mag=Math.pow(10,Math.floor(Math.log10(raw))),x=raw/mag;return (x<=1?1:x<=2?2:x<=2.5?2.5:x<=5?5:10)*mag;}
+function niceMax(v){if(v<=0)return 1;const e=Math.pow(10,Math.floor(Math.log10(v)));const m=v/e;return (m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*e;}
+function areaChart(day,unit,renLabel){
+  const W=560,H=250,L=46,R=12,T=14,B=30,iw=W-L-R,ih=H-T-B;
+  const raw=Math.max(...day.map(d=>Math.max(d.load,d.sun||0)))*1.05, st=niceStep(raw,4), nT=Math.ceil(raw/st), mx=st*nT;
+  const X=h=>L+h/23*iw, Y=v=>T+ih-v/mx*ih;
+  const stackPath=(f0,f1)=>{let top=day.map(d=>[X(d.h),Y(f1(d))]),bot=day.map(d=>[X(d.h),Y(f0(d))]).reverse();return 'M'+top.map(p=>p.join(',')).join('L')+'L'+bot.map(p=>p.join(',')).join('L')+'Z';};
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="24-hour energy supply profile">`;
+  for(let i=0;i<=nT;i++){const v=st*i,y=Y(v);s+=`<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="var(--line-soft)"/><text x="${L-6}" y="${y+4}" text-anchor="end" font-size="10.5" fill="var(--ink-3)" font-family="var(--mono)">${fmt(v,v%1?1:0)}</text>`;}
+  [0,6,12,18,23].forEach(h=>{s+=`<text x="${X(h)}" y="${H-10}" text-anchor="middle" font-size="10.5" fill="var(--ink-3)" font-family="var(--mono)">${String(h).padStart(2,'0')}:00</text>`;});
+  s+=`<text x="${L}" y="${T-2}" font-size="10.5" fill="var(--ink-3)" font-family="var(--mono)">${unit}</text>`;
+  s+=`<path d="${stackPath(()=>0,d=>d.fromSun)}" fill="var(--sun)" fill-opacity=".55"/>`;
+  s+=`<path d="${stackPath(d=>d.fromSun,d=>d.fromSun+d.fromBatt)}" fill="var(--accent)" fill-opacity=".45"/>`;
+  s+=`<path d="${stackPath(d=>d.fromSun+d.fromBatt,d=>d.fromSun+d.fromBatt+d.fromGrid)}" fill="var(--grid)" fill-opacity=".35"/>`;
+  if(day[0].sun!==undefined){s+=`<path d="M${day.map(d=>X(d.h)+','+Y(d.sun)).join('L')}" fill="none" stroke="var(--sun)" stroke-width="1.5" stroke-dasharray="4 3"/>`;}
+  s+=`<path d="M${day.map(d=>X(d.h)+','+Y(d.load)).join('L')}" fill="none" stroke="var(--ink)" stroke-width="2"/>`;
+  s+=`</svg>`;
+  return s;
+}
+function waterChart(monthly,stress){
+  const W=440,H=250,L=48,R=10,T=14,B=30,iw=W-L-R,ih=H-T-B;
+  const tot=monthly.map(m=>m.direct+m.ind), raw=Math.max(...tot)*1.08, st=niceStep(raw,4), nT=Math.ceil(raw/st), mx=st*nT;
+  const bw=iw/12*0.64, X=i=>L+(i+0.5)*iw/12, Y=v=>T+ih-v/mx*ih;
+  const M='JFMAMJJASOND';
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Monthly water use, direct and indirect">`;
+  if(stress){s+=`<rect x="${X(5)-iw/24}" y="${T}" width="${iw/12*3}" height="${ih}" fill="var(--water-soft)" opacity=".7"/><text x="${X(6)}" y="${T+12}" text-anchor="middle" font-size="10" fill="var(--water)" font-family="var(--mono)">${stress}</text>`;}
+  for(let i=0;i<=nT;i++){const v=st*i,y=Y(v);s+=`<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="var(--line-soft)"/><text x="${L-6}" y="${y+4}" text-anchor="end" font-size="10.5" fill="var(--ink-3)" font-family="var(--mono)">${v>=1000?fmt(v/1000,(v/1000)%1?1:0)+'k':fmt(v)}</text>`;}
+  monthly.forEach((m,i)=>{
+    const y1=Y(m.ind), y2=Y(m.ind+m.direct);
+    s+=`<rect x="${X(i)-bw/2}" y="${y1}" width="${bw}" height="${T+ih-y1}" fill="var(--grid)" fill-opacity=".45" rx="1.5"/>`;
+    if(m.direct>0) s+=`<rect x="${X(i)-bw/2}" y="${y2}" width="${bw}" height="${y1-y2}" fill="var(--water)" rx="1.5"/>`;
+    s+=`<text x="${X(i)}" y="${H-10}" text-anchor="middle" font-size="10.5" fill="var(--ink-3)" font-family="var(--mono)">${M[i]}</text>`;
+  });
+  s+=`<text x="${L}" y="${T-2}" font-size="10.5" fill="var(--ink-3)" font-family="var(--mono)">m³ / month</text></svg>`;
+  return s;
+}
+function moneyChart(years,fmtFn,labels){
+  const W=900,H=280,L=70,R=16,T=18,B=32,iw=W-L-R,ih=H-T-B;
+  const vals=years.flatMap(y=>[y.net,y.cum]);
+  let hi=Math.max(0,...vals),lo=Math.min(0,...vals);
+  const span=niceMax((hi-lo)||1), step=span/5;
+  hi=Math.ceil(hi/step)*step; lo=Math.floor(lo/step)*step; if(hi===lo)hi=lo+step;
+  const n=years.length, X=i=>L+(i+0.5)*iw/n, Y=v=>T+(hi-v)/(hi-lo)*ih, bw=iw/n*0.55;
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${labels.aria}">`;
+  for(let v=lo;v<=hi+1e-6;v+=step){const y=Y(v);s+=`<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="${Math.abs(v)<1e-6?'var(--ink-3)':'var(--line-soft)'}"/><text x="${L-8}" y="${y+4}" text-anchor="end" font-size="11" fill="var(--ink-3)" font-family="var(--mono)">${fmtFn(v)}</text>`;}
+  years.forEach((y,i)=>{
+    const y0=Y(0),y1=Y(y.net);
+    s+=`<rect x="${X(i)-bw/2}" y="${Math.min(y0,y1)}" width="${bw}" height="${Math.max(1,Math.abs(y1-y0))}" fill="${y.net>=0?'var(--good)':'var(--bad)'}" fill-opacity=".75" rx="2"><title>Year ${y.y}: ${fmtFn(y.net)}</title></rect>`;
+    s+=`<text x="${X(i)}" y="${H-10}" text-anchor="middle" font-size="11" fill="var(--ink-3)" font-family="var(--mono)">Y${y.y}</text>`;
+  });
+  s+=`<path d="M${years.map((y,i)=>X(i)+','+Y(y.cum)).join('L')}" fill="none" stroke="var(--ink)" stroke-width="2.2"/>`;
+  years.forEach((y,i)=>{s+=`<circle cx="${X(i)}" cy="${Y(y.cum)}" r="3" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.6"/>`;});
+  const last=years[n-1];
+  s+=`<text x="${X(n-1)-8}" y="${Y(last.cum)-10}" text-anchor="end" font-size="12" font-weight="700" fill="var(--ink)" font-family="var(--mono)">${fmtFn(last.cum)}</text>`;
+  s+=`</svg>`;
+  return s;
+}
+
+/* ---------------- schematic ---------------- */
+function node(x,y,w,h,title,val,col,soft){
+  return `<g><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="9" fill="${soft}" stroke="${col}" stroke-width="1.4"/>
+  <text x="${x+10}" y="${y+18}" font-size="11" font-family="var(--mono)" fill="var(--ink-3)" letter-spacing=".06em">${title}</text>
+  <text x="${x+10}" y="${y+h-11}" font-size="17" font-weight="700" font-family="var(--body)" fill="var(--ink)">${val}</text></g>`;
+}
+function flow(d,col,w){return `<path class="flow" d="${d}" stroke="${col}" stroke-opacity=".28" stroke-width="${w}"/><path class="flow anim" d="${d}" stroke="${col}" stroke-width="${Math.max(1.6,w*0.45)}"/>`;}
+function renderSchematic(m){
+  let s=`<rect x="0" y="0" width="600" height="380" fill="none"/>`;
+  if(mode==='build'){
+    const p=S.build, sw=v=>clamp(2+v*14,2,16);
+    const solF=m.solar/100, gridF=1-solF;
+    s+=flow('M150 70 C230 70 230 170 262 170',"var(--sun)",sw(solF));
+    s+=flow('M150 190 C210 190 210 190 262 190',"var(--accent)",sw(Math.min(1,p.batt/14)*solF));
+    s+=flow('M150 310 C230 310 230 210 262 210',"var(--grid)",sw(gridF));
+    s+=flow('M85 102 L85 160',"var(--sun)",2.5);
+    const outs=[[70,'Schools','14'],[150,'Health centres','3'],[230,'Farmers org','2,400'],[310,'Homes',fmt(p.hh)]];
+    outs.forEach(([y])=>{s+=flow(`M388 190 C420 190 420 ${y} 452 ${y}`,"var(--accent)",2.4);});
+    s+=node(20,40,130,62,'SOLAR ARRAY',fmt(m.kwp)+' kWp',"var(--sun)","var(--sun-soft)");
+    s+=node(20,160,130,62,'BATTERY',fmt(m.battKwh)+' kWh',"var(--accent)","var(--accent-soft)");
+    s+=node(20,280,130,62,'GRID FEEDER',fmt(m.gridMWh)+' MWh/yr',"var(--grid)","var(--grid-soft)");
+    s+=`<g><rect x="262" y="128" width="126" height="124" rx="10" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"/>`;
+    for(let i=0;i<5;i++) s+=`<rect x="280" y="${146+i*14}" width="90" height="8" rx="2" fill="var(--surface-2)" stroke="var(--line)"/><circle cx="362" cy="${150+i*14}" r="2" fill="var(--accent)"/>`;
+    s+=`<text x="325" y="232" text-anchor="middle" font-size="16" font-weight="700" fill="var(--ink)">${fmt(m.facKw,1)} kW</text><text x="325" y="246" text-anchor="middle" font-size="10" font-family="var(--mono)" fill="var(--ink-3)">EDGE SITE · PUE ${m.c.pue}</text></g>`;
+    outs.forEach(([y,t,v])=>{s+=`<g><rect x="452" y="${y-22}" width="130" height="44" rx="8" fill="var(--surface)" stroke="var(--line)"/><text x="464" y="${y-5}" font-size="10.5" font-family="var(--mono)" fill="var(--ink-3)">${t.toUpperCase()}</text><text x="464" y="${y+13}" font-size="14" font-weight="700" fill="var(--ink)">${v}</text></g>`;});
+    s+=`<text x="325" y="290" text-anchor="middle" font-size="11" fill="var(--ink-2)">fibre + LEO backup</text>`;
+    s+=`<g><path d="M318 318 q7 -14 14 0 a7 7 0 1 1 -14 0z" fill="var(--water)"/><text x="340" y="326" font-size="12" fill="var(--ink-2)">${fmt(m.wDirect+m.wInd)} m³/yr water</text></g>`;
+    s+=`<g><text x="340" y="346" font-size="12" fill="var(--ink-2)">${fmt(m.co2)} tCO₂e/yr</text></g>`;
+    $('#schemTitle').textContent='Kundgol edge site · live';
+  } else {
+    const p=S.assess, sw=v=>clamp(2+v*14,2,16);
+    s+=flow('M150 70 C220 70 220 165 250 165',"var(--sun)",sw(p.renew/100));
+    s+=flow('M150 190 C210 190 210 190 250 190',"var(--grid)",sw(1-p.renew/100));
+    s+=flow('M150 310 C220 310 220 215 250 215',"var(--water)",sw(Math.min(1,m.hhWater/2500)));
+    const outs=[[60,'Local jobs',fmt(m.localOps)+' of '+fmt(m.ops)],[140,'Council, 20 yr',gbp(m.years[19].cum)],[220,'Bill effect',"£"+m.billHH.toFixed(2)+"/hh/yr"],[300,'Farmland',fmt(m.land,0)+' ha']];
+    outs.forEach(([y],i)=>{s+=flow(`M400 190 C425 190 425 ${y} 448 ${y}`,i===1&&m.years[19].cum<0?"var(--bad)":"var(--accent)",2.4);});
+    s+=node(20,40,130,62,'RENEWABLE PPA',p.renew+'%',"var(--sun)","var(--sun-soft)");
+    s+=node(20,160,130,62,'GRID DRAW',fmt(m.gridMWh/1000)+' GWh/yr',"var(--grid)","var(--grid-soft)");
+    s+=node(20,280,130,62,'MAINS WATER',fmt(m.wDirect/1000)+'k m³/yr',"var(--water)","var(--water-soft)");
+    s+=`<g><rect x="250" y="118" width="150" height="144" rx="10" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"/>`;
+    for(let r=0;r<3;r++)for(let c=0;c<4;c++) s+=`<rect x="${266+c*30}" y="${134+r*26}" width="24" height="18" rx="2" fill="var(--surface-2)" stroke="var(--line)"/>`;
+    s+=`<text x="325" y="232" text-anchor="middle" font-size="16" font-weight="700" fill="var(--ink)">${fmt(p.mw)} MW IT</text><text x="325" y="248" text-anchor="middle" font-size="10" font-family="var(--mono)" fill="var(--ink-3)">${COOL_A[p.cool].label.toUpperCase()} · PUE ${m.c.pue}</text></g>`;
+    outs.forEach(([y,t,v])=>{s+=`<g><rect x="448" y="${y-22}" width="140" height="44" rx="8" fill="var(--surface)" stroke="var(--line)"/><text x="460" y="${y-5}" font-size="10.5" font-family="var(--mono)" fill="var(--ink-3)">${t.toUpperCase()}</text><text x="460" y="${y+13}" font-size="14" font-weight="700" fill="${t.startsWith('Council')&&m.years[19].cum<0?'var(--bad)':'var(--ink)'}">${v}</text></g>`;});
+    s+=`<text x="325" y="300" text-anchor="middle" font-size="12" fill="var(--ink-2)">${fmt(m.co2)} tCO₂e/yr</text><text x="325" y="318" text-anchor="middle" font-size="12" fill="var(--ink-2)">${fmt(m.gensets)} backup generators</text>`;
+    $('#schemTitle').textContent='Fenland campus · live';
+  }
+  $('#schem').innerHTML=s;
+}
+
+/* ---------------- KPIs ---------------- */
+let lastM=null;
+function kpiValues(){
+  const m=lastM;
+  if(mode==='build') return {cap:m.capex-m.grant,be:m.be||11,kwp:m.kwp,co2:m.co2,water:m.wDirect+m.wInd,cost:m.opex/ (S.build.hh*12)};
+  return {gwh:m.annualMWh/1000,water:m.wDirect,jobs:m.localOps,fiscal:m.years[19].cum,bill:m.billHH,land:m.land};
+}
+function delta(key,v,fmtFn,goodDown){
+  const b=pinned[mode]; if(!b) return '';
+  const d=v-b[key]; if(Math.abs(d)<1e-9*Math.max(1,Math.abs(v))||Math.abs(d)/(Math.abs(b[key])||1)<0.005) return `<span class="dl flat">= baseline</span>`;
+  const up=d>0, cls= goodDown? (up?'up':'down') : (up?'upg':'downb');
+  return `<span class="dl ${cls}">${up?'▲':'▼'} ${fmtFn(Math.abs(d))} vs baseline</span>`;
+}
+function renderKPIs(m){
+  const k=kpiValues(); let items;
+  if(mode==='build'){
+    items=[
+      {l:'Capital cost after grant',v:inr(k.cap).replace(' Cr','<small>Cr</small>').replace(' L','<small>lakh</small>'),r:`of ${inr(m.capex)} total · range ±15%`,d:delta('cap',k.cap,inr,true)},
+      {l:'Members repaid',v: m.be?`Year ${m.be}`:'Beyond Y10',r:`${inr(m.equity)} member equity · ${inr(m.years[9].cum)} ahead by Y10`,d:delta('be',k.be,v=>fmt(v)+' yr',true)},
+      {l:'Facility power',v:`${fmt(m.facKw,1)}<small>kW</small>`,r:`${fmt(m.annualMWh)} MWh/yr, as much as ${fmt(m.annualMWh)} rural homes`,d:''},
+      {l:'Solar and storage',v:`${fmt(m.kwp)}<small>kWp</small>`,r:`${fmt(m.battKwh)} kWh battery · ${m.solar}% solar`,d:delta('kwp',k.kwp,v=>fmt(v)+' kWp',false)},
+      {l:'Emissions',v:`${fmt(m.co2)}<small>tCO₂e/yr</small>`,r:`range ${fmt(m.co2*0.85)} to ${fmt(m.co2*1.15)}`,d:delta('co2',k.co2,v=>fmt(v)+' t',true)},
+      {l:'Water, direct + indirect',v:`${fmt(k.water)}<small>m³/yr</small>`,r:`${fmt(m.wDirect)} on site · range ±30%`,d:delta('water',k.water,v=>fmt(v)+' m³',true)}
+    ];
+  } else {
+    items=[
+      {l:'Annual electricity',v:`${fmt(k.gwh)}<small>GWh</small>`,r:`= ${fmt(m.hhEq)} UK homes · range ±8%`,d:delta('gwh',k.gwh,v=>fmt(v)+' GWh',true)},
+      {l:'Water drawn on site',v:`${fmt(m.wDirect/1000)}<small>k m³/yr</small>`,r:`= ${fmt(m.hhWater)} households · range ±30%`,d:delta('water',k.water,v=>fmt(v/1000)+'k m³',true)},
+      {l:'Permanent local jobs',v:`${fmt(m.localOps)}<small>of ${fmt(m.ops)}</small>`,r:`${fmt(m.constrPeak)} construction jobs at peak`,d:delta('jobs',k.jobs,v=>fmt(v),false)},
+      {l:'Council net, 20 years',v:gbp(k.fiscal).replace(/([mk])$/,'<small>$1</small>'),r:`after service costs · range ±25%`,d:delta('fiscal',k.fiscal,gbp,false)},
+      {l:'Household bill effect',v:`£${m.billHH.toFixed(2)}<small>/yr</small>`,r:`regional, from grid costs · range ±40%`,d:delta('bill',k.bill,v=>'£'+v.toFixed(2),true)},
+      {l:'Farmland taken',v:`${fmt(m.land)}<small>ha</small>`,r:`grade 1–2 arable · campus and substation`,d:delta('land',k.land,v=>fmt(v)+' ha',true)}
+    ];
+  }
+  $('#kpis').innerHTML=items.map(i=>`<div class="kpi"><span class="l">${i.l}</span><span class="v num">${i.v}</span><span class="r">${i.r}</span>${i.d}</div>`).join('');
+}
+
+/* ---------------- panels ---------------- */
+function renderEnergy(m){
+  const f=[];
+  if(mode==='build'){
+    $('#eTitle').textContent='Energy & water';
+    $('#eSub').textContent=`An average day at the edge site. Solar covers the daytime load and charges the battery; the grid fills the rest. ${m.c.label} cooling at PUE ${m.c.pue}.`;
+    if(S.build.solar>m.maxSolar) f.push(`<span class="chip warn">Solar capped at ${m.maxSolar.toFixed(0)}%: add battery hours</span>`);
+    else f.push(`<span class="chip ok">${m.solar}% solar achievable</span>`);
+    f.push(m.facKw>45?`<span class="chip warn">Check 63 kVA feeder headroom</span>`:`<span class="chip ok">Fits existing feeder</span>`);
+    if(m.c.wue>0.5) f.push(`<span class="chip bad">Evaporative water in a stressed taluk</span>`);
+    $('#c1Label').textContent='Supply over 24 hours · kW';
+    $('#chartDay').innerHTML=areaChart(m.day,'kW');
+    $('#legDay').innerHTML=`<span><i style="background:var(--ink)"></i>Load</span><span><i style="background:var(--sun);opacity:.7"></i>Solar used</span><span><i style="background:var(--accent);opacity:.6"></i>Battery</span><span><i style="background:var(--grid);opacity:.5"></i>Grid</span><span><i style="background:var(--sun);opacity:.35"></i>Solar output (dashed)</span>`;
+    $('#c2Label').textContent='Water by month · m³';
+    $('#chartWater').innerHTML=waterChart(m.monthly,'');
+  } else {
+    $('#eTitle').textContent='Energy & water';
+    $('#eSub').textContent=`A 100 MW-class campus runs flat out, day and night. ${COOL_A[S.assess.cool].label} cooling at PUE ${m.c.pue} and WUE ${m.c.wue} L/kWh. Evaporative cooling peaks in summer, when local supply is tightest.`;
+    f.push(m.hhWater>3000?`<span class="chip bad">Water = ${fmt(m.hhWater)} homes</span>`:m.hhWater>800?`<span class="chip warn">Water = ${fmt(m.hhWater)} homes</span>`:`<span class="chip ok">Low on-site water</span>`);
+    f.push(S.assess.renew<30?`<span class="chip warn">Mostly grid-powered</span>`:`<span class="chip ok">${S.assess.renew}% renewable</span>`);
+    $('#c1Label').textContent='Supply over 24 hours · MW';
+    $('#chartDay').innerHTML=areaChart(m.day,'MW');
+    $('#legDay').innerHTML=`<span><i style="background:var(--ink)"></i>Load</span><span><i style="background:var(--sun);opacity:.7"></i>Renewable PPA</span><span><i style="background:var(--grid);opacity:.5"></i>Grid</span>`;
+    $('#c2Label').textContent='Water by month · m³';
+    $('#chartWater').innerHTML=waterChart(m.monthly,'dry season');
+  }
+  $('#legWater').innerHTML=`<span><i style="background:var(--water)"></i>Direct, on site</span><span><i style="background:var(--grid);opacity:.5"></i>Indirect, at power stations</span>`;
+  $('#eFlags').innerHTML=f.join('');
+}
+
+function renderMoney(m){
+  const f=[];
+  if(mode==='build'){
+    $('#mTitle').textContent='Finance · 10-year cash flow';
+    $('#mSub').textContent=`Revenue from households, the farmer producer organisation, schools, health centres, gram panchayats and spare capacity, minus running costs and loan repayments. Grant covers ${S.build.grant}% of capex and members put in 10%, so the cumulative line starts at their equity.`;
+    f.push(m.be?`<span class="chip ${m.be>7?'warn':'ok'}">Members repaid in year ${m.be}</span>`:`<span class="chip bad">Members not repaid in 10 years</span>`);
+    const util=m.demand5/S.build.it;
+    f.push(util>0.9?`<span class="chip bad">Year-5 demand ${Math.round(util*100)}% of capacity</span>`:util>0.7?`<span class="chip warn">Year-5 demand ${Math.round(util*100)}% of capacity</span>`:`<span class="chip ok">Year-5 demand ${Math.round(util*100)}% of capacity</span>`);
+    $('#chartMoney').innerHTML=moneyChart(m.years,v=>inr(v),{aria:'Annual net cash flow and cumulative position over ten years'});
+    $('#legMoney').innerHTML=`<span><i style="background:var(--good);opacity:.75"></i>Net cash, surplus year</span><span><i style="background:var(--bad);opacity:.75"></i>Net cash, deficit year</span><span><i style="background:var(--ink)"></i>Cumulative</span>`;
+    const rows=[['Households',y=>y.hhRev],['Institutions & spare capacity',y=>y.rev-y.hhRev],['Revenue',y=>y.rev,'tot'],['Grid energy',y=>-y.energy],['Staff, upkeep, backhaul, refresh',y=>-(y.op-y.energy)],['Loan repayment',y=>-y.ds],['Net cash',y=>y.net,'tot']];
+    const ys=m.years.slice(0,5);
+    $('#stmt').innerHTML=`<div class="eyebrow" style="margin-bottom:6px">Profit and cash flow · ₹ lakh</div><table class="t num"><thead><tr><th></th>${ys.map(y=>`<th>Y${y.y}</th>`).join('')}</tr></thead><tbody>`+
+      rows.map(([n,fn,c])=>`<tr class="${c||''}"><td>${n}</td>${ys.map(y=>{const v=fn(y);return `<td class="${v<0?'neg':''}">${fmt(v/1e5,1)}</td>`;}).join('')}</tr>`).join('')+`</tbody></table>`;
+    const capRows=[['IT equipment',m.itCap],['Prefab room, cooling, UPS',m.facCap],['Solar array',m.solarCap],['Battery',m.battCap],['Backhaul (fibre + LEO)',m.bh],['Civil works & install',m.civil]];
+    $('#side').innerHTML=`<div><div class="eyebrow" style="margin-bottom:4px">Capital cost</div>${capRows.map(([n,v])=>`<div class="mini"><span>${n}</span><b>${inr(v)}</b></div>`).join('')}<div class="mini"><span><strong>Total</strong></span><b>${inr(m.capex)}</b></div><div class="mini"><span>Grant · members · loan</span><b>${fmt(m.grant/1e5,0)} · ${fmt(m.equity/1e5,0)} · ${fmt(m.loan/1e5,0)} L</b></div></div>
+      <div><div class="eyebrow">Compute demand vs capacity, year 5</div><div class="gauge"><span style="width:${Math.min(100,m.demand5/S.build.it*100)}%;background:${m.demand5/S.build.it>0.9?'var(--bad)':'var(--accent)'}"></span></div><div class="mini" style="border:0"><span>${fmt(m.demand5,1)} kW needed of ${S.build.it} kW</span><b>${fmt(m.years[4].hh)} homes</b></div></div>
+      <div class="mini"><span>Running cost per subscribed home</span><b>₹${fmt(m.opex/S.build.hh/12)}/mo</b></div>`;
+  } else {
+    $('#mTitle').textContent='Public finance · 20-year council balance';
+    $('#mSub').textContent=`What the district council keeps: its retained share of business rates plus any community fund, minus the cost of roads, fire cover and planning. Three construction years, then ${S.assess.relief}% rates relief for 10 years.`;
+    const c=m.years[19].cum;
+    f.push(c>0?`<span class="chip ok">Council ahead by ${gbp(c)}</span>`:`<span class="chip bad">Council behind by ${gbp(-c)}</span>`);
+    f.push(m.be?`<span class="chip ${m.be>8?'warn':'ok'}">Pays back in year ${m.be}</span>`:`<span class="chip bad">Never pays back</span>`);
+    $('#chartMoney').innerHTML=moneyChart(m.years,v=>gbp(v),{aria:'Annual and cumulative net position for the district council over 20 years'});
+    $('#legMoney').innerHTML=`<span><i style="background:var(--good);opacity:.75"></i>Net gain year</span><span><i style="background:var(--bad);opacity:.75"></i>Net cost year</span><span><i style="background:var(--ink)"></i>Cumulative</span>`;
+    const pick=[1,4,8,14,20].map(i=>m.years[i-1]);
+    const rows=[['Retained business rates',y=>y.rates],['Community benefit fund',y=>y.fund],['Local service costs',y=>-y.cost],['Net to council',y=>y.net,'tot'],['Cumulative',y=>y.cum,'tot']];
+    $('#stmt').innerHTML=`<div class="eyebrow" style="margin-bottom:6px">Council account · £ thousand</div><table class="t num"><thead><tr><th></th>${pick.map(y=>`<th>Y${y.y}</th>`).join('')}</tr></thead><tbody>`+
+      rows.map(([n,fn,c])=>`<tr class="${c||''}"><td>${n}</td>${pick.map(y=>{const v=fn(y);return `<td class="${v<0?'neg':''}">${fmt(v/1e3)}</td>`;}).join('')}</tr>`).join('')+`</tbody></table>`;
+    $('#side').innerHTML=`<div><div class="eyebrow" style="margin-bottom:4px">Deal in numbers</div>
+      <div class="mini"><span>Gross business rates</span><b>${gbp(m.ratesGross)}/yr</b></div>
+      <div class="mini"><span>Relief given over 10 years, all tiers</span><b>${gbp(m.reliefCost)}</b></div>
+      <div class="mini"><span>Grid upgrade cost</span><b>${gbp(m.gridCost)}</b></div>
+      <div class="mini"><span>Recovered through regional bills</span><b>${gbp(m.socialised)}</b></div>
+      <div class="mini"><span>Community fund, per year</span><b>${gbp(S.assess.fund*S.assess.mw)}</b></div></div>
+      <div><div class="eyebrow">Permanent roles filled locally</div><div class="gauge"><span style="width:${S.assess.hire}%"></span></div><div class="mini" style="border:0"><span>${fmt(m.localOps)} of ${fmt(m.ops)} roles</span><b>${S.assess.hire}%</b></div></div>`;
+  }
+  $('#mFlags').innerHTML=f.join('');
+}
+
+function renderLedger(m){
+  let rows;
+  const sc=v=>clamp(v,0,5);
+  if(mode==='build'){
+    const p=S.build, water=(m.wDirect+m.wInd);
+    rows=[
+      ['Jobs & skills','3 technicians',sc(0.3),'Few construction days lost to farm work',sc(3),'3 local technicians trained; 12 construction jobs'],
+      ['Public finance','GP e-services',sc(0.5),'Grant money not spent elsewhere',sc(2.5),'Panchayats and schools pay less than private cloud'],
+      ['Electricity','feeder',sc(m.gridMWh/60),`${fmt(m.gridMWh)} MWh/yr drawn from a rural feeder`,sc(m.solar/18),`${m.solar}% solar; battery keeps services up in outages`],
+      ['Water','taluk supply',sc(water/35+(m.c.wue>0.5?2:0)),`${fmt(water)} m³/yr in a water-stressed taluk`,sc(m.c.wue<0.2?1.5:0.5),'Air cooling keeps on-site water near zero'],
+      ['Climate & air','global',sc(m.co2/25),`${fmt(m.co2)} tCO₂e/yr from coal-heavy grid power`,sc(m.solar/20),'Solar displaces diesel gensets at schools and clinics'],
+      ['Land & amenity','neighbours',sc(m.kwp*6/10000*6),`${fmt(m.kwp*6)} m² of panels on panchayat land`,sc(1),'Rooftop and shaded parking options'],
+      ['Digital access','villages',sc(0),'—',sc(2+p.hh/1600),`${fmt(p.hh)} homes on a Kannada voice service; records stay local`],
+      ['Governance & equity','members',sc(p.fee>80?2:p.fee>50?1:0.3),p.fee>50?'Fee above ₹50/mo excludes poorer homes':'Fee affordable for most homes',sc(4),'Co-op owned; members vote on services and fees']
+    ];
+  } else {
+    const p=S.assess, fisc=m.years[19].cum;
+    rows=[
+      ['Jobs & skills','district',sc(p.hire<20?3:p.hire<40?2:1),`${fmt(m.ops-m.localOps)} of ${fmt(m.ops)} roles filled from outside`,sc(m.localOps/12+m.constrPeak/800),`${fmt(m.localOps)} permanent local roles, ${fmt(m.constrPeak)} at construction peak`],
+      ['Public finance','council',sc(fisc<0?-fisc/2e6+1:p.relief/40),`${gbp(m.reliefCost)} of rates relief over 10 years`,sc(fisc>0?fisc/4e6:0),fisc>0?`Council ahead by ${gbp(fisc)} over 20 years`:'No net gain to the council'],
+      ['Electricity','regional bill payers',sc(m.billHH/3),`£${m.billHH.toFixed(2)}/yr per home in the region`,sc(p.gridShare/25),`Developer funds ${p.gridShare}% of ${gbp(m.gridCost)} upgrade`],
+      ['Water','Anglian supply zone',sc(m.hhWater/1200),`${fmt(m.wDirect/1000)}k m³/yr, peaking in dry summers`,sc(p.cool==='liquid'?1.5:p.cool==='air'?1:0.3),p.cool==='evap'?'Heat reuse possible but not proposed':'Low-water cooling chosen'],
+      ['Climate & air','residents near gensets',sc(m.co2/8000+m.gensets/30),`${fmt(m.co2)} tCO₂e/yr; ${fmt(m.gensets)} diesel gensets tested monthly`,sc(p.renew/16),`${p.renew}% renewable supply`],
+      ['Land & amenity','neighbours, farmers',sc(m.land/5),`${fmt(m.land)} ha of grade 1–2 farmland; noise and night light`,sc(0.5),'Screening and landscaping in the plan'],
+      ['Digital access','national users',sc(1.5),'Capacity serves distant users; little local compute',sc(0.8),'Faster fibre along the route'],
+      ['Governance & equity','district',sc(p.fund===0?3.5:p.fund<5000?2:1),p.fund===0?'No community fund; terms negotiated privately':'Fund set, but below peer deals',sc(p.fund/4000),p.fund?`${gbp(p.fund*p.mw)}/yr to a community trust`:'—']
+    ];
+  }
+  $('#ledger').innerHTML=rows.map(([d,who,h,ht,b,bt])=>`<div class="lrow">
+    <div class="side h"><div class="barw"><span style="width:${h/5*100}%"></span></div><p>${esc(ht)}</p></div>
+    <div class="dom">${d}<small>${fmt(h,1)} · ${fmt(b,1)}</small></div>
+    <div class="side b"><div class="barw"><span style="width:${b/5*100}%"></span></div><p>${esc(bt)}</p></div></div>`).join('');
+}
+
+function renderChecks(m){
+  const L=[];
+  if(mode==='build'){
+    const p=S.build;
+    $('#cTitle').textContent='Decision checklist';
+    $('#cSub').textContent='What the co-op board should settle before committing, generated from the current scenario.';
+    if(!m.be) L.push(['bad','!','Members not repaid within 10 years','Raise the household fee, add an anchor contract, or increase the capital grant.']);
+    else if(m.be>7) L.push(['warn','~',`Members repaid late, in year ${m.be}`,'Test a public contract with the district health office or the state education department.']);
+    else L.push(['ok','✓',`Members repaid in year ${m.be}`,'Keep a reserve of six months of running costs before launch.']);
+    if(S.build.solar>m.maxSolar) L.push(['warn','~','Solar target not reachable with this battery','Add battery hours or lower the solar share.']);
+    if(m.demand5/p.it>0.9) L.push(['bad','!','Capacity runs out by year 5','Plan a second rack or cap new subscriptions.']);
+    if(m.c.wue>0.5) L.push(['bad','!','Evaporative cooling in a water-stressed taluk','Switch to air or liquid cooling, or secure a rainwater tank and a panchayat water agreement.']);
+    if(p.fee>60) L.push(['warn','~',`Fee of ₹${p.fee}/mo may exclude poorer homes`,'Offer a free tier funded by institutional contracts.']);
+    L.push(['ok','✓','Data governance','Agree in the co-op rules who owns voice and health data, and that it stays on site.']);
+    L.push(['warn','~','Grid connection','Confirm feeder capacity and outage hours with HESCOM before sizing the battery.']);
+    L.push(['ok','✓','Skills','Train three technicians from member households through the district ITI.']);
+  } else {
+    const p=S.assess;
+    $('#cTitle').textContent='Negotiation checklist';
+    $('#cSub').textContent='Questions for the developer and conditions the district can ask for, generated from gaps and weak terms in the current scenario.';
+    if(p.fund===0) L.push(['bad','!','Ask for a community benefit fund','No fund is offered. A fund of £5,000–£10,000 per MW per year would add '+gbp(p.mw*7500)+' a year for the district.']);
+    if(p.relief>=50) L.push(['bad','!',`Rates relief of ${p.relief}% costs ${gbp(m.reliefCost)}`,'Link any relief to verified local hiring and water targets, with clawback if they are missed.']);
+    if(p.cool==='evap') L.push(['bad','!','Demand water-use disclosure and a drought plan',`Evaporative cooling draws ${fmt(m.wDirect/1000)}k m³/yr. Require metered reporting, a summer cap and a non-potable or recycled source.`]);
+    if(p.gridShare<60) L.push(['warn','~','Developer should fund more of the grid upgrade',`${gbp(m.socialised)} would fall on regional bill payers.`]);
+    if(p.hire<40) L.push(['warn','~','Local hiring commitment is low',`Ask for 40% or more, with a training partnership at the local college.`]);
+    if(p.renew<50) L.push(['warn','~','Renewable supply below half','Ask for hourly-matched renewable supply rather than annual certificates.']);
+    L.push(['warn','~','Backup generator testing','Limit test hours, require cleaner fuel and monitor air quality at the nearest homes.']);
+    L.push(['ok','✓','Heat reuse','Ask for a study of supplying waste heat to nearby greenhouses or a heat network.']);
+    L.push(['ok','✓','Publish the deal','Terms, incentives and water data should be public, not under a non-disclosure agreement.']);
+  }
+  $('#checks').innerHTML=L.map(([c,i,t,d])=>`<li><span class="ic ${c}">${i}</span><div><b>${esc(t)}</b><span>${esc(d)}</span></div></li>`).join('');
+}
+
+/* ---------------- main ---------------- */
+function update(){
+  const m= mode==='build'? modelBuild(S.build) : modelAssess(S.assess);
+  lastM=m;
+  renderSchematic(m); renderKPIs(m); renderEnergy(m); renderMoney(m); renderLedger(m); renderChecks(m);
+}
+function setMode(md){
+  mode=md;
+  $('#mBuild').setAttribute('aria-pressed',md==='build');
+  $('#mAssess').setAttribute('aria-pressed',md==='assess');
+  renderSheet(); update();
+  try{localStorage.setItem('cdcb-mode',md);}catch(e){}
+}
+$('#mBuild').addEventListener('click',()=>setMode('build'));
+$('#mAssess').addEventListener('click',()=>setMode('assess'));
+let start='build';
+if(location.hash==='#assess') start='assess';
+else { try{const s=localStorage.getItem('cdcb-mode'); if(s==='assess'||s==='build') start=s;}catch(e){} }
+setMode(start);
+})();
+</script>
+
+</body>
+</html>
